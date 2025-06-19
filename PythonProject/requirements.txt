@@ -27,6 +27,8 @@ pyasn1_modules==0.4.2
 requests==2.32.4
 requests-oauthlib==2.0.0
 rsa==4.9.1
+scipy==1.15.3
+screeninfo==0.8.1
 six==1.17.0
 tensorboard==2.13.0
 tensorboard-data-server==0.7.2
