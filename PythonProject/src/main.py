@@ -7,9 +7,8 @@ from PIL import Image, ImageTk
 from datetime import datetime
 import os
 import tkinter.ttk as ttk
-import time
-import threading
 import tkinter.font as font
+from screeninfo import get_monitors
 
 # Đường dẫn đến model và nhãn
 MODEL_PATH = "../model/keras_model.h5"
@@ -29,21 +28,27 @@ def save_misclassified(img, correct_label):
     cv2.imwrite(filename, img)
     print(f"Đã lưu ảnh sai vào: {filename}")
 
-# Add at the top:
-import tkinter.font as font
-
-...
-
 class TrashClassifierApp:
     def __init__(self, root):
         self.root = root
         self.root.title("🧠 Trash Classification System")
         self.root.configure(bg="#befc95")
+        
 
-        self.video = cv2.VideoCapture(0)
+        for monitor in get_monitors():
+            if monitor.is_primary:
+                screen_width = monitor.width
+                screen_height = monitor.height
+                break
+        
+        print("Primary screen width:", screen_width)
+        print("Primary screen height:", screen_height)
+        scale_w = screen_width / 1920  # Use your reference width
+        scale_h = screen_height / 1080  # Use your reference height
+        scale = min(scale_w, scale_h)
 
         # Custom font
-        self.default_font = font.Font(family="Helvetica", size=12)
+        self.default_font = font.Font(family="Helvetica", size=int(12 * scale))
 
         # Top Frame
         frame_top = Frame(root, bg="#4CAF50", pady=10)
@@ -51,18 +56,39 @@ class TrashClassifierApp:
 
         Label(frame_top, text="🗑️ Smart Trash Classifier", font=("Helvetica", 20, "bold"), fg="white", bg="#4CAF50").pack()
 
-        # Camera feed
-        self.panel = Label(root, bg="#dfe6e9", bd=2, relief=SUNKEN)
+ 
+
+
+
+
+
+       # Camera feed
+        self.panel_width = int(640 * scale)
+        self.panel_height = int(480 * scale)
+
+        self.panel = Label(root, width=self.panel_width, height=self.panel_height, bg="#dfe6e9", bd=2, relief=SUNKEN)
         self.panel.pack(pady=10)
+
+
+
+ 
+
+        self.video = cv2.VideoCapture(0)
+
 
         # Prediction label
         self.label_text = StringVar()
-        self.label_display = Label(root, textvariable=self.label_text, font=("Helvetica", 16, "bold"), 
-                                   bg="white", fg="#2d3436", relief=SOLID, bd=2, padx=10, pady=5)
+        font_size = int(16 * scale)
+        self.label_display = Label(root, textvariable=self.label_text, font=("Helvetica", font_size, "bold"), 
+                           bg="white", fg="#2d3436", relief=SOLID, bd=2, padx=10, pady=5)
+
         self.label_display.pack(pady=8)
 
         # Confidence bar
-        self.conf_bar = ttk.Progressbar(root, orient="horizontal", length=300, mode="determinate")
+        screen_width = self.root.winfo_screenwidth()
+        bar_width = int(screen_width * 0.1)  # 25% of screen width, adjust as needed
+        self.conf_bar = ttk.Progressbar(root, orient="horizontal", length=bar_width, mode="determinate")
+
         self.conf_bar.pack(pady=5)
         create_tooltip(self.conf_bar, "📊 Confidence level of the current prediction")
 
@@ -70,8 +96,8 @@ class TrashClassifierApp:
         btn_frame = Frame(root, bg="#f2f2f2")
         btn_frame.pack(pady=10)
 
-        Button(btn_frame, text="✅ Đúng", command=self.mark_correct, width=12, bg="#81c784", font=self.default_font).pack(side=LEFT, padx=20)
-        Button(btn_frame, text="❌ Sai", command=self.mark_wrong, width=12, bg="#e57373", font=self.default_font).pack(side=RIGHT, padx=20)
+        Button(btn_frame, text="✅ Đúng", command=self.mark_correct, width=int(12*scale), bg="#81c784", font=self.default_font).pack(side=LEFT, padx=20)
+        Button(btn_frame, text="❌ Sai", command=self.mark_wrong, width=int(12*scale), bg="#e57373", font=self.default_font).pack(side=RIGHT, padx=20)
 
         self.current_frame = None
         self.pred_label = ""
@@ -84,6 +110,16 @@ class TrashClassifierApp:
         self.current_frame = frame.copy()
 
         img = cv2.resize(frame, (224, 224))
+
+        # For display:
+        img_display = cv2.resize(frame, (self.panel_width, self.panel_height))
+
+        img_display = cv2.cvtColor(img_display, cv2.COLOR_BGR2RGB)
+        img_display = Image.fromarray(img_display)
+        img_display = ImageTk.PhotoImage(img_display)
+        self.panel.configure(image=img_display)
+        self.panel.image = img_display
+
         img = img_to_array(img) / 255.0
         img = np.expand_dims(img, axis=0)
         preds = model.predict(img)[0]
@@ -104,13 +140,6 @@ class TrashClassifierApp:
 
                 
         self.conf_bar["value"] = confidence * 100
-
-        # Convert image and show
-        img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        img = Image.fromarray(img)
-        img = ImageTk.PhotoImage(img)
-        self.panel.configure(image=img)
-        self.panel.image = img
 
         self.root.after(100, self.update_frame)
 

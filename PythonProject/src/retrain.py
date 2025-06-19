@@ -9,7 +9,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import ModelCheckpoint
 
 # ==== Cấu hình ====
-DATA_DIR = "data/misclassified"
+DATA_DIR = "../data/misclassified"
 BATCH_SIZE = 16
 EPOCHS = 10
 IMG_SIZE = 224
