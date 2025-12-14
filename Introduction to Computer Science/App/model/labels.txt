@@ -1,0 +1,7 @@
+0 cans
+1 foamBox
+2 paperMilk
+3 glassBottle
+4 Paper
+5 plasticCup
+6 plasticBottle
